@@ -18,7 +18,7 @@
             <ColumnDefinition Width=".79*"/>
         </Grid.ColumnDefinitions>
         <userControls:sidePanel x:Name="sidePanel" Grid.Column="0" Background="GhostWhite"/>
-        <userControls:displayPanel x:Name="displayPanel" Grid.Column="1" Background="WhiteSmoke"/>
+        <userControls:displayPanel x:Name="displayPanel" Grid.Column="1" Background="white"/>
     </Grid>
 
 

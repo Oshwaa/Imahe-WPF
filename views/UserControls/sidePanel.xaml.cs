@@ -60,7 +60,6 @@ namespace Imahe.views.UserControls
                     ViewModelLocator.MainViewModel.DirectoryPath = folderPath;
                     MessageBox.Show($"DirectoryPath: {ViewModelLocator.MainViewModel.DirectoryPath}");
                     
-                    _displayPanel?.load_images();
                 }
                 else
                 {
@@ -72,26 +71,37 @@ namespace Imahe.views.UserControls
         {
             double minExposureValue = min_exposure.Value;
             double maxExposureValue = max_exposure.Value;
+            double maxBlurValue =max_Blur.Value;
             string referencePathValue = referencePath.Text.Replace('\\', '/');
             string directoryPathValue = directoryPath.Text.Replace('\\', '/');
+            
 
             if (string.IsNullOrWhiteSpace(referencePathValue) || string.IsNullOrWhiteSpace(directoryPathValue))
             {
+                
                 MessageBox.Show("Reference Path and Directory Path must not be empty.", "Input Error");
             }
             else
             {
                 // Show the values for confirmation
-                MessageBox.Show($"Min Exposure: {minExposureValue}\nMax Exposure: {maxExposureValue}\nReference Path: {referencePathValue}\nDirectory Path: {directoryPathValue}", "Values");
+                results.Clear();
+                Status.Visibility = Visibility.Visible;
+                MessageBox.Show(
+                    $"Min Exposure: {minExposureValue}\n" +
+                    $"Max Exposure: {maxExposureValue}\n" +
+                    $"Reference Path: {referencePathValue}\n" +
+                    $"Directory Path: {directoryPathValue}\n" +
+                    $"Max Blur: {maxBlurValue}",
+                    "Values"
+                );
 
-                
-                RunPythonScript(minExposureValue, maxExposureValue, referencePathValue, directoryPathValue);
+                RunPythonScript(minExposureValue, maxExposureValue, referencePathValue, directoryPathValue, maxBlurValue);
             }
 
         }
 
 
-        private void RunPythonScript(double minExposure, double maxExposure, string referencePath, string directoryPath)
+        private void RunPythonScript(double minExposure, double maxExposure, string referencePath, string directoryPath,double maxBlurValue)
         {
             // Create a new process
             ProcessStartInfo start = new ProcessStartInfo();
@@ -100,8 +110,8 @@ namespace Imahe.views.UserControls
             start.FileName = "python"; // Make sure this points to your Python interpreter
 
             // Arguments to pass to the Python script
-            string script = @"script.py"; // Path to the Python script
-            string args = $"--directory \"{directoryPath}\" --reference \"{referencePath}\" --exposure_min {minExposure} --exposure_max {maxExposure}";
+            string script = @"assets/script.py"; // Path to the Python script
+            string args = $"--directory \"{directoryPath}\" --reference \"{referencePath}\" --exposure_min {minExposure} --exposure_max {maxExposure} --blur_max {maxBlurValue}";
 
             // Set up process start info
             start.Arguments = $"{script} {args}";
@@ -112,8 +122,10 @@ namespace Imahe.views.UserControls
 
             try
             {
+                
                 using (Process process = Process.Start(start))
                 {
+
                     using (StreamReader outputReader = process.StandardOutput)
                     using (StreamReader errorReader = process.StandardError)
                     {
@@ -122,13 +134,17 @@ namespace Imahe.views.UserControls
 
                         if (!string.IsNullOrEmpty(result))
                         {
+                            
                             results.Text = result;
-                             
+                            Status.Visibility = Visibility.Hidden;
+                           
                         }
 
                         if (!string.IsNullOrEmpty(errors))
                         {
                             MessageBox.Show($"Errors: {errors}");
+                            Status.Visibility = Visibility.Hidden;
+
                         }
                     }
                 }
@@ -136,6 +152,8 @@ namespace Imahe.views.UserControls
             catch (Exception ex)
             {
                 MessageBox.Show($"Error running script: {ex.Message}");
+                Status.Visibility = Visibility.Hidden;
+
             }
         }
 
@@ -150,6 +168,21 @@ namespace Imahe.views.UserControls
             {
                 MessageBox.Show("No text to copy.");
             }
+        }
+
+        private void min_exposure_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            minExp.Text = "Minimum Exposure: " + min_exposure.Value.ToString("F1");
+        }
+
+        private void max_exposure_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            maxExp.Text = "Maximum Exposure: " + max_exposure.Value.ToString("F1");
+        }
+
+        private void max_Blur_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            minSharp.Text = "Minimum Sharpness: " + max_Blur.Value.ToString("F1");
         }
 
 
