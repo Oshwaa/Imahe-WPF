@@ -364,3 +364,13 @@ FodyWeavers.xsd
 
 assets/
 
+dist/
+
+venv/
+
+test.py
+script.spec
+
+build/
+
+Properties/

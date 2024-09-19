@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using Imahe.models;
+using Imahe.views.UserControls;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -16,14 +18,16 @@ namespace Imahe
     /// </summary>
     public partial class MainWindow : Window
     {
+        private MainViewModel _viewModel;
+
         public MainWindow()
         {
             InitializeComponent();
-        }
+            _viewModel = new MainViewModel();
 
-        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            MessageBox.Show("Hi");
+            sidePanel.DataContext = _viewModel;
+            displayPanel.DataContext = _viewModel;
+
         }
     }
 }

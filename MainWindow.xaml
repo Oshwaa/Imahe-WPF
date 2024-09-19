@@ -5,21 +5,20 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Imahe"
         xmlns:userControls="clr-namespace:Imahe.views.UserControls"
+        
         mc:Ignorable="d"
         MinWidth="1200"
         MinHeight="700"
-        
-        Title="Imahe" Height="700" Width="1200" WindowStyle="ThreeDBorderWindow" Icon="/assets/images/icon.png">
-    <Grid Background="#000000">
+        Title="Imahe" Height="700" Width="1200" WindowStyle="ThreeDBorderWindow" Icon="assets/images/icon.png">
+    
+    
+    <Grid Background="Transparent">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="18*"/>
-            <ColumnDefinition Width="132*"/>
-            <ColumnDefinition Width="43*"/>
-            <ColumnDefinition Width="317*"/>
-            <ColumnDefinition Width="90*"/>
+            <ColumnDefinition Width=".21*"/>
+            <ColumnDefinition Width=".79*"/>
         </Grid.ColumnDefinitions>
-        <userControls:sidePanel Grid.Column="0" Background="GhostWhite" Grid.ColumnSpan="2"/>
-
+        <userControls:sidePanel x:Name="sidePanel" Grid.Column="0" Background="GhostWhite"/>
+        <userControls:displayPanel x:Name="displayPanel" Grid.Column="1" Background="WhiteSmoke"/>
     </Grid>
 
 

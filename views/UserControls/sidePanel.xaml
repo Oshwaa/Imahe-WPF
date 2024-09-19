@@ -5,10 +5,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Imahe.views.UserControls"
              mc:Ignorable="d" 
-             d:DesignHeight="800" d:DesignWidth="300">
+             d:DesignHeight="800" d:DesignWidth="300"
+             d:Background="White">
     <Grid Background="Transparent">
 
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -24,7 +26,8 @@
         BorderBrush="Transparent"
         Foreground="Black"
         Padding="10,5"
-        Cursor="Hand">
+        Grid.Row="0"
+        Cursor="Hand" Click="reference_button_Click">
 
             <!-- Custom ControlTemplate for the Button -->
             <Button.Template>
@@ -73,7 +76,7 @@
         Foreground="Black"
         Padding="10,5"
         Grid.Row="1"
-        Cursor="Hand">
+        Cursor="Hand" Click="directory_button_Click">
 
             <!-- Custom ControlTemplate for the Button -->
             <Button.Template>
@@ -122,22 +125,77 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    
+
                     <TextBlock Grid.Row="0" Text="Minimum Exposure" Foreground="Black" HorizontalAlignment="Center"/>
 
-                    
-                    <Slider x:Name="min_exposure" MaxWidth="200" VerticalAlignment="Center" Value="5" Grid.Row="1" />
 
-                   
+                    <Slider x:Name="min_exposure"
+                        MinWidth="150"
+                        VerticalAlignment="Center"
+                        Minimum="0"             
+                        Maximum="4"
+                        Value="1"
+                        TickFrequency="0.1"
+                        IsSnapToTickEnabled="True"
+                        TickPlacement="BottomRight"
+                        SmallChange="0.1"
+                        LargeChange="0.5"
+                        Grid.Row="1" /> 
+
+
                     <TextBlock Grid.Row="2" Text="Maximum Exposure" Foreground="Black" HorizontalAlignment="Center"/>
 
-                    
-                    <Slider x:Name="max_exposure" MaxWidth="200" VerticalAlignment="Center" Value="5" Grid.Row="3" />
+
+                    <Slider x:Name="max_exposure"
+                        MinWidth="150"
+                        VerticalAlignment="Center"
+                        Minimum="0"             
+                        Maximum="4"
+                        Value="1"
+                        TickFrequency="0.1"
+                        IsSnapToTickEnabled="True"
+                        TickPlacement="BottomRight"
+                        SmallChange="0.1"
+                        LargeChange="0.5"
+                        Grid.Row="3" />
                 </Grid>
             </Border>
-
-
         </Grid>
+        <Grid Grid.Row="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Name ="referencePath" FontSize="20" Grid.Row="0" Padding="20"/>
+            <TextBlock Name ="directoryPath" FontSize="20" Grid.Row="1" Padding="20"/>
+            <TextBlock Name ="ref_placeholder" FontSize="20" Grid.Row="0" Padding="20" Text="Reference Path"/>
+            <TextBlock Name ="dir_placeholder" FontSize="20" Grid.Row="1" Padding="20" Text="Directory"/>
+        </Grid>
+        <Grid Grid.Row="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height=".9*"/>
+                <RowDefinition Height=".15*"/>
+            </Grid.RowDefinitions>
+            <Button x:Name="sort_button" Width="200" Height="30" Content="SORT" FontSize="22" FontWeight="Light"
+                    Click="sort_button_Click" Grid.Row="1"/>
+            <Grid Grid.Row="0">
+                <TextBox x:Name="results"
+                 VerticalAlignment="Stretch"
+                 HorizontalAlignment="Stretch"
+ 
+                 IsReadOnly="True"
+                 TextWrapping="Wrap"
+                 AcceptsReturn="True"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto"/>
 
+                <Button Content="Copy Script"
+                VerticalAlignment="Bottom"
+                HorizontalAlignment="Left"
+                Margin="10"
+                Width="150"
+                Click="Copy_Click"/>
+            </Grid>
+        </Grid>
     </Grid>
 </UserControl>
