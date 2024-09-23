@@ -6,17 +6,17 @@ using Imahe.models;
 using Imahe.helpers;
 using System.Diagnostics;
 using System.IO;
-
-
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Imahe.views.UserControls
 {
-    /// <summary>
-    /// Interaction logic for sidePanel.xaml
-    /// </summary>
     public partial class sidePanel : UserControl
     {
         private displayPanel _displayPanel;
+        private CancellationTokenSource _cancellationTokenSource;
+        private Process _pythonProcess; // Track the process so we can kill it on cancellation
+
         public sidePanel()
         {
             InitializeComponent();
@@ -30,7 +30,6 @@ namespace Imahe.views.UserControls
             if (success == true)
             {
                 ref_placeholder.Text = string.Empty;
-                
                 referencePath.Text = fileDialog.FileName;
                 string path = fileDialog.FileName;
                 ViewModelLocator.MainViewModel.ReferencePath = path;
@@ -44,7 +43,7 @@ namespace Imahe.views.UserControls
             {
                 CheckFileExists = false,
                 ValidateNames = false,
-                FileName = "Select Folder" // This is necessary to use OpenFileDialog to select folders
+                FileName = "Select Folder"
             };
 
             bool? result = openFileDialog.ShowDialog();
@@ -59,7 +58,6 @@ namespace Imahe.views.UserControls
                     directoryPath.Text = folderPath;
                     ViewModelLocator.MainViewModel.DirectoryPath = folderPath;
                     MessageBox.Show($"DirectoryPath: {ViewModelLocator.MainViewModel.DirectoryPath}");
-                    
                 }
                 else
                 {
@@ -67,18 +65,31 @@ namespace Imahe.views.UserControls
                 }
             }
         }
-        private void sort_button_Click(object sender, RoutedEventArgs e)
+
+        private async void sort_button_Click(object sender, RoutedEventArgs e)
         {
+            if (_cancellationTokenSource != null) // Cancel if already running
+            {
+                _cancellationTokenSource.Cancel();
+                if (_pythonProcess != null && !_pythonProcess.HasExited)
+                {
+                    _pythonProcess.Kill(); // Terminate Python process
+                }
+                sort_button.Content = "Sort";
+                Status.Visibility = Visibility.Hidden;
+                MessageBox.Show("Processing canceled.");
+                return;
+            }
+
+            // Otherwise, start sorting
             double minExposureValue = min_exposure.Value;
             double maxExposureValue = max_exposure.Value;
-            double maxBlurValue =max_Blur.Value;
+            double maxBlurValue = max_Blur.Value;
             string referencePathValue = referencePath.Text.Replace('\\', '/');
             string directoryPathValue = directoryPath.Text.Replace('\\', '/');
-            
 
             if (string.IsNullOrWhiteSpace(referencePathValue) || string.IsNullOrWhiteSpace(directoryPathValue))
             {
-                
                 MessageBox.Show("Reference Path and Directory Path must not be empty.", "Input Error");
             }
             else
@@ -86,74 +97,79 @@ namespace Imahe.views.UserControls
                 // Show the values for confirmation
                 results.Clear();
                 Status.Visibility = Visibility.Visible;
-                MessageBox.Show(
-                    $"Min Exposure: {minExposureValue}\n" +
-                    $"Max Exposure: {maxExposureValue}\n" +
-                    $"Reference Path: {referencePathValue}\n" +
-                    $"Directory Path: {directoryPathValue}\n" +
-                    $"Max Blur: {maxBlurValue}",
-                    "Values"
-                );
+                sort_button.Content = "Cancel"; // Change to "Cancel" while processing
+                _cancellationTokenSource = new CancellationTokenSource(); // Initialize cancellation token source
 
-                RunPythonScript(minExposureValue, maxExposureValue, referencePathValue, directoryPathValue, maxBlurValue);
+                try
+                {
+                    await RunPythonScriptAsync(minExposureValue, maxExposureValue, referencePathValue, directoryPathValue, maxBlurValue, _cancellationTokenSource.Token);
+                }
+                finally
+                {
+                    _cancellationTokenSource = null; 
+                    sort_button.Content = "Sort"; 
+                }
             }
-
         }
 
-
-        private void RunPythonScript(double minExposure, double maxExposure, string referencePath, string directoryPath,double maxBlurValue)
+        private async Task RunPythonScriptAsync(double minExposure, double maxExposure, string referencePath, string directoryPath, double maxBlurValue, CancellationToken cancellationToken)
         {
-            // Create a new process
-            ProcessStartInfo start = new ProcessStartInfo();
-
-            // Specify the Python interpreter path
-            start.FileName = "python"; // Make sure this points to your Python interpreter
-
-            // Arguments to pass to the Python script
-            string script = @"assets/script.py"; // Path to the Python script
-            string args = $"--directory \"{directoryPath}\" --reference \"{referencePath}\" --exposure_min {minExposure} --exposure_max {maxExposure} --blur_max {maxBlurValue}";
-
-            // Set up process start info
-            start.Arguments = $"{script} {args}";
-            start.UseShellExecute = false;
-            start.RedirectStandardOutput = true;
-            start.RedirectStandardError = true;
-            start.CreateNoWindow = true;
+            ProcessStartInfo start = new ProcessStartInfo
+            {
+                FileName = "python", // Ensure correct Python path
+                Arguments = $"assets/script.py --directory \"{directoryPath}\" --reference \"{referencePath}\" --exposure_min {minExposure} --exposure_max {maxExposure} --blur_max {maxBlurValue}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
 
             try
             {
-                
-                using (Process process = Process.Start(start))
+                using (_pythonProcess = new Process { StartInfo = start })
                 {
+                    _pythonProcess.Start();
 
-                    using (StreamReader outputReader = process.StandardOutput)
-                    using (StreamReader errorReader = process.StandardError)
+                    Task<string> outputTask = _pythonProcess.StandardOutput.ReadToEndAsync();
+                    Task<string> errorTask = _pythonProcess.StandardError.ReadToEndAsync();
+
+                    // Poll the cancellation token for cancellation request
+                    while (!_pythonProcess.HasExited)
                     {
-                        string result = outputReader.ReadToEnd();
-                        string errors = errorReader.ReadToEnd();
-
-                        if (!string.IsNullOrEmpty(result))
+                        if (cancellationToken.IsCancellationRequested)
                         {
-                            
-                            results.Text = result;
-                            Status.Visibility = Visibility.Hidden;
-                           
+                            _pythonProcess.Kill();
+                            cancellationToken.ThrowIfCancellationRequested();
                         }
+                        await Task.Delay(100); // Poll every 100 ms
+                    }
 
-                        if (!string.IsNullOrEmpty(errors))
-                        {
-                            MessageBox.Show($"Errors: {errors}");
-                            Status.Visibility = Visibility.Hidden;
+                    string result = await outputTask;
+                    string errors = await errorTask;
 
-                        }
+                    if (!string.IsNullOrEmpty(result))
+                    {
+                        results.Text = result;
+                    }
+
+                    if (!string.IsNullOrEmpty(errors))
+                    {
+                        MessageBox.Show($"Errors: {errors}");
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                results.Text = "Processing was canceled.";
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error running script: {ex.Message}");
+            }
+            finally
+            {
                 Status.Visibility = Visibility.Hidden;
-
+                _pythonProcess = null; // Reset the process variable
             }
         }
 
@@ -184,13 +200,5 @@ namespace Imahe.views.UserControls
         {
             minSharp.Text = "Minimum Sharpness: " + max_Blur.Value.ToString("F1");
         }
-
-
-
-        //end
-
-
-
-
     }
 }
