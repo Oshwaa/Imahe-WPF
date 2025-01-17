@@ -6,7 +6,7 @@ from PIL import Image
 import numpy as np
 import dlib
 from scipy.spatial import distance as dist
-
+import subprocess
 # Initialize dlib face detector and predictor
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("assets/face_predictor.dat")
@@ -87,7 +87,7 @@ def detect_main_focus(image):
         main_focus = image[y:y+h, x:x+w]
         
         blur = get_blur(main_focus)
-        if blur >= 40:
+        if blur >= 30:
             return main_focus
     
     return None
@@ -100,12 +100,12 @@ def quality(image):
     
     return blurriness, exposure, noise
 
-def get_criteria(reference_image, exposure_min, exposure_max):
+def get_criteria(reference_image, exposure_min, exposure_max, blur_max):
     reference_image = load_image(reference_image)
     blurriness, exposure, noise = quality(reference_image)
     
     criteria = {
-        'blurriness_max': blurriness,
+        'blurriness_max': blurriness * blur_max,
         'exposure_min': exposure * exposure_min,
         'exposure_max': exposure * exposure_max,
         'noise_max': noise * 4,
@@ -167,12 +167,12 @@ def are_eyes_closed(image, ear_threshold=0.2):
 
     return False
 
-def process_images(directory_path, reference_path, exposure_min, exposure_max):
+def process_images(directory_path, reference_path, exposure_min, exposure_max, blur_max):
     hashes = {}
     yolo_net, output_layers = load_yolo_model()
     
     try:
-        criteria = get_criteria(reference_path, exposure_min, exposure_max)
+        criteria = get_criteria(reference_path, exposure_min, exposure_max, blur_max)
     except FileNotFoundError as e:
         raise
 
@@ -256,18 +256,34 @@ def process_images(directory_path, reference_path, exposure_min, exposure_max):
     
     return bash_script,reasons
 
+def create_run(directory,bashscript):
+    bat_file_path = f"{directory}/bashscript"
+    with open(bat_file_path,'w') as file:
+        file.write(bashscript)
+    try:
+        result = subprocess.run(bat_file_path, shell=True, check=True)
+        print("SORTED NA ANG MOTHERFUCKING PHOTOS")
+    except subprocess.CalledProcessError as e:
+        print(f"AGUY MATE MAY ERROR{e}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Process and classify images.")
     parser.add_argument("--directory", help="Directory containing images to process")
     parser.add_argument("--reference", help="Path to the reference image for criteria")
     parser.add_argument("--exposure_min", type=float, default=0.6, help="Minimum exposure multiplier")
     parser.add_argument("--exposure_max", type=float, default=1.5, help="Maximum exposure multiplier")
+    parser.add_argument("--blur_max", type=float, default=1.0, help="Maximum blur value multiplier")
+
     
     args = parser.parse_args()
 
     try:
-        bash_script, reasons = process_images(args.directory, args.reference, args.exposure_min, args.exposure_max)
-        print(bash_script)
+        bash_script , reasons= process_images(args.directory, args.reference, args.exposure_min, args.exposure_max, args.blur_max)
+        
+        create_run(args.directory,bash_script)
+        print(f"Check folder: if d nag run yung motherfucking bash script create ka nalang eto ung script : {bash_script}")
+        
         
         # Print reasons for debugging
         #print("\nDebugging Information:")
