@@ -262,7 +262,7 @@ def create_run(directory,bashscript):
         file.write(bashscript)
     try:
         result = subprocess.run(bat_file_path, shell=True, check=True)
-        print("SORTED NA ANG MOTHERFUCKING PHOTOS")
+        print("SORTED?")
     except subprocess.CalledProcessError as e:
         print(f"AGUY MATE MAY ERROR{e}")
 
@@ -282,7 +282,7 @@ def main():
         bash_script , reasons= process_images(args.directory, args.reference, args.exposure_min, args.exposure_max, args.blur_max)
         
         create_run(args.directory,bash_script)
-        print(f"Check folder: if d nag run yung motherfucking bash script create ka nalang eto ung script : {bash_script}")
+        print(f"Check folder: if d nag run yung bash script create ka nalang eto ung script : {bash_script}")
         
         
         # Print reasons for debugging
